@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ATS Resume Score Checker</title>
+
+<style>
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    margin: 0;
+    padding: 0;
+}
+
+.dashboard {
+    max-width: 950px;
+    margin: 60px auto;
+    background: #ffffff;
+    padding: 35px;
+    border-radius: 14px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #1f2937;
+}
+
+label {
+    font-weight: 600;
+    color: #374151;
+}
+
+textarea, input[type="file"] {
+    width: 100%;
+    padding: 14px;
+    margin-top: 8px;
+    margin-bottom: 22px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(90deg, #2563eb, #4f46e5);
+    color: white;
+    border: none;
+    font-size: 17px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+.result-box {
+    margin-top: 35px;
+    padding: 25px;
+    border-radius: 12px;
+    background: #f9fafb;
+    display: none;
+}
+
+.score {
+    font-size: 34px;
+    font-weight: bold;
+    color: #16a34a;
+    text-align: center;
+}
+
+.match-type {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.improvements {
+    margin-top: 20px;
+}
+
+.improvements h3 {
+    margin-bottom: 10px;
+    color: #1f2937;
+}
+
+.improvements ul {
+    padding-left: 20px;
+}
+
+.improvements li {
+    margin-bottom: 8px;
+    color: #374151;
+}
+</style>
+</head>
+
+<body>
+
+<div class="dashboard">
+    <h1>ATS Resume Score Checker</h1>
+
+    <label>Job Description</label>
+    <textarea id="jobDesc" rows="6" placeholder="Paste job description here..."></textarea>
+
+    <label>Upload Resume (PDF)</label>
+    <input type="file" id="resume" accept=".pdf">
+
+    <button onclick="analyze()">Analyze Resume</button>
+
+    <div class="result-box" id="resultBox">
+        <div class="score" id="score"></div>
+        <div class="match-type" id="matchType"></div>
+
+        <div class="improvements">
+            <h3>Suggested Improvements</h3>
+            <ul id="improvementsList"></ul>
+        </div>
+    </div>
+</div>
+
+<script>
+function analyze() {
+    const resume = document.getElementById("resume").files[0];
+    const jobDesc = document.getElementById("jobDesc").value;
+
+    if (!resume || jobDesc.trim() === "") {
+        alert("Please upload resume and enter job description");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("resume", resume);
+    formData.append("job_description", jobDesc);
+
+    fetch("/analyze", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        const score = parseInt(data.score);
+
+        document.getElementById("resultBox").style.display = "block";
+        document.getElementById("score").innerText = "ATS Score: " + score + "/100";
+
+        let matchText = "";
+        let improvements = [];
+
+        if (score >= 80) {
+            matchText = "Excellent Match ✅";
+            improvements = [
+                "Minor formatting improvements can help",
+                "Add more quantified achievements",
+                "Ensure keywords are naturally placed"
+            ];
+        } else if (score >= 50) {
+            matchText = "Good Match ⚠️";
+            improvements = [
+                "Add missing job-related keywords",
+                "Improve skills section alignment",
+                "Add relevant projects or experience"
+            ];
+        } else {
+            matchText = "Poor Match ❌";
+            improvements = [
+                "Customize resume for this job role",
+                "Add required technical skills",
+                "Rewrite summary using job description keywords"
+            ];
+        }
+
+        document.getElementById("matchType").innerText = matchText;
+
+        const ul = document.getElementById("improvementsList");
+        ul.innerHTML = "";
+        improvements.forEach(item => {
+            const li = document.createElement("li");
+            li.innerText = item;
+            ul.appendChild(li);
+        });
+    })
+    .catch(err => {
+        alert("Something went wrong. Check backend.");
+        console.error(err);
+    });
+}
+</script>
+
+</body>
+</html>
